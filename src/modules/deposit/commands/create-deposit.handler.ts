@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager } from 'typeorm';
+import { DepositLogEntity } from '../entities/deposit-log.entity';
 import { DepositEntity } from '../entities/deposit.entity';
 import { CreateDepositCommand } from './create-deposit.command';
 
@@ -9,17 +9,18 @@ import { CreateDepositCommand } from './create-deposit.command';
 export class CreateDepositHandler
   implements ICommandHandler<CreateDepositCommand>
 {
-  constructor(
-    @InjectRepository(DepositEntity)
-    private readonly repo: Repository<DepositEntity>,
-  ) {}
+  constructor(private readonly entityManager: EntityManager) {}
 
-  async execute({ depositDto }: CreateDepositCommand): Promise<void> {
+  async execute({ depositDto }: CreateDepositCommand) {
     try {
       Logger.log('execute deposit', depositDto);
-      await this.repo.save({
-        ...depositDto,
-        unixTimestamp: new Date().getTime(),
+      return this.entityManager.transaction(async (trx) => {
+        const data = await trx.save(DepositEntity, [
+          { ...depositDto, unixTimestamp: new Date().getTime() },
+        ]);
+        await trx.save(DepositLogEntity, [
+          { log: JSON.stringify({ ...data }) },
+        ]);
       });
     } catch (error) {
       Logger.error(error);

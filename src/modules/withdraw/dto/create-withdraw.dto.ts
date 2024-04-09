@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateWithDrawDto {
   @IsString()
@@ -16,6 +16,12 @@ export class CreateWithDrawDto {
   @IsNumber()
   @IsNotEmpty()
   amount: number;
+  @IsString()
+  @IsOptional()
+  type: string;
+  @IsString()
+  @IsOptional()
+  version: string;
 }
 
 //Event ID: 789012345

@@ -1,25 +1,26 @@
 import { Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager } from 'typeorm';
+import { WithdrawLogEntity } from '../entities/withdraw-log.entity';
 import { WithdrawEntity } from '../entities/withdraw.entity';
-import { CreateWithdrawCommand } from './create-Withdraw.command';
+import { CreateWithdrawCommand } from './create-withdraw.command';
 
 @CommandHandler(CreateWithdrawCommand)
 export class CreateWithdrawHandler
   implements ICommandHandler<CreateWithdrawCommand>
 {
-  constructor(
-    @InjectRepository(WithdrawEntity)
-    private readonly repo: Repository<WithdrawEntity>,
-  ) {}
+  constructor(private readonly entityManager: EntityManager) {}
 
-  async execute({ withdrawDto }: CreateWithdrawCommand): Promise<void> {
+  async execute({ withdrawDto }: CreateWithdrawCommand) {
     try {
-      Logger.log('execute Withdraw', withdrawDto);
-      await this.repo.save({
-        ...withdrawDto,
-        unixTimestamp: new Date().getTime(),
+      Logger.log('execute withdraw', withdrawDto);
+      return this.entityManager.transaction(async (trx) => {
+        const data = await trx.save(WithdrawEntity, [
+          { ...withdrawDto, unixTimestamp: new Date().getTime() },
+        ]);
+        await trx.save(WithdrawLogEntity, [
+          { log: JSON.stringify({ ...data }) },
+        ]);
       });
     } catch (error) {
       Logger.error(error);

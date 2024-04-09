@@ -36,7 +36,7 @@ export class KafkaConsumer {
       );
     } catch (error) {
       Logger.log('dead leater queue');
-      await this.saveFailMs(payload, topic);
+      await this.saveFailMs(payload, topic, error.message);
     }
   }
 
@@ -68,12 +68,13 @@ export class KafkaConsumer {
     );
   }
 
-  async saveFailMs(payload: any, topic: string) {
+  async saveFailMs(payload: any, topic: string, err: string) {
     try {
       await this.dlqRepo.save({
         eventId: payload?.eventId,
         topic,
         message: JSON.stringify(payload),
+        error: err,
       });
     } catch (error) {
       Logger.error('save DLQ fail', error);

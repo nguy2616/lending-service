@@ -13,4 +13,7 @@ export class DeadLetterQueueEntity {
 
   @Column({ nullable: false })
   message: string;
+
+  @Column()
+  error: string;
 }
